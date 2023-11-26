@@ -2,28 +2,41 @@ from ultralytics import YOLO
 import cv2
 import cvzone
 import math
+import winsound
+
 cap = cv2.VideoCapture(0)
-cap.set(3,1280)
-cap.set(4,720)
+cap.set(3, 1280)
+cap.set(4, 720)
 model = YOLO("../yolo_weights/yolov8l.pt")
 
-classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop     sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange","broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"]
+# Use a set to store the classes of interest
+classNames = ["cell phone"]
 
 while True:
     success, img = cap.read()
-    results = model(img, stream = True)
+    results = model(img, stream=True)
+    cell_phone_detected = False  # Flag to check if cell phone is detected
     for r in results:
         boxes = r.boxes
         for box in boxes:
-            #bounding box
-            x1, y1, x2, y2 = box.xyxy[0]
-            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-            w, h = x2-x1, y2-y1
-            cvzone.cornerRect(img, (x1, y1, w, h))
-            #confidence
-            conf = math.ceil((box.conf[0]*100))/100
-            #Class name
             cls = int(box.cls[0])
-            cvzone.putTextRect(img, f'{classNames[cls]} {conf}', (max(0, x1), max(35, y1)))
-    cv2.imshow("Image",img)
+
+            # Check if the detected object is in the set of classes of interest
+            if 0 <= cls < len(classNames) and classNames[cls] == "cell phone":
+                # Bounding box
+                x1, y1, x2, y2 = box.xyxy[0]
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                w, h = x2 - x1, y2 - y1
+                cvzone.cornerRect(img, (x1, y1, w, h))
+                # Confidence
+                conf = math.ceil((box.conf[0] * 100)) / 100
+                # Class name
+                cvzone.putTextRect(img, f'{classNames[cls]} {conf}', (max(0, x1), max(35, y1)))
+                cell_phone_detected = True  # Set the flag to True
+
+    cv2.imshow("Image", img)
     cv2.waitKey(1)
+
+    # Beep when a cell phone is detected
+    if cell_phone_detected:
+        winsound.Beep(1000, 500)
